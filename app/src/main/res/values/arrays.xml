@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="first_move">
+        <item>@string/player_label</item>
+        <item>@string/computer_label</item>
+        <item>@string/random_label</item>
+    </array>
+</resources>
