@@ -11,16 +11,13 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Toast;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Logger;
 
+import android.os.AsyncTask;
+
 import allbegray.slack.SlackClientFactory;
-import allbegray.slack.bot.SlackbotClient;
-import allbegray.slack.rtm.Event;
-import allbegray.slack.rtm.EventListener;
 import allbegray.slack.rtm.SlackRealTimeMessagingClient;
-import allbegray.slack.type.Bot;
-import allbegray.slack.SlackClientFactory;
-import allbegray.slack.type.Channel;
 
 public class MainActivity extends Activity implements OnClickListener {
     Logger log = Logger.getLogger("log");
@@ -33,6 +30,27 @@ public class MainActivity extends Activity implements OnClickListener {
         findViewById(R.id.new_button).setOnClickListener(this);
         findViewById(R.id.about_button).setOnClickListener(this);
         findViewById(R.id.exit_button).setOnClickListener(this);
+
+    }
+
+    private class SlackConnection extends AsyncTask<String, Void, String> {
+
+
+        @Override
+        protected String doInBackground(String... input) {
+            String slack_token = "xoxb-445228206210-445416796645-QOUSh3T34qBBlIUSRm2i8B9h";
+            SlackRealTimeMessagingClient client = SlackClientFactory.createSlackRealTimeMessagingClient(slack_token);
+
+            try{
+                client.connect();
+                return "connecting to slack";
+            } catch (Exception e){
+                System.out.print(e);
+                return "failing to connect to slack";
+            }
+        }
+
+
     }
 //    @Override
 //    public boolean onCreateOptionsMenu(Menu menu) {
@@ -48,26 +66,31 @@ public class MainActivity extends Activity implements OnClickListener {
                 break;
             case R.id.new_button: openNewGameDialog();
                 break;
-            case R.id.continue_button: openSlackGame();
+            case R.id.continue_button:
+                try {
+                    openSlackGame();
+                } catch (Exception e) {
+                    Log.d(this.getClass().getSimpleName(), "error 1");
+                }
             case R.id.exit_button: finish();
                 break;
 // More code later...
         }
     }
 
-//    @Override
-//    public boolean onOptionsItemSelected(MenuItem item) {
-//        switch (item.getItemId()) { case R.id.action_settings: startActivity(new Intent(this, Prefs.class));
-//            return true;
-//// Add more as needed
-//        }
-//        return false;
-//    }
 
     private void openNewGameDialog() {
         try{
             //Toast toast = Toast.makeText(this, "I am here",Toast.LENGTH_LONG);
             //toast.show();
+            SlackConnection connection = new SlackConnection();
+            connection.execute("1");
+            String result = null;
+            try {
+                result = connection.get();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             new AlertDialog.Builder(this).setTitle(R.string.game_title).setItems(R.array.first_move, new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog,
@@ -78,37 +101,14 @@ public class MainActivity extends Activity implements OnClickListener {
         }
     }
 
-    public void openSlackGame(){
-
-            //Toast toast = Toast.makeText(this, "I am here",Toast.LENGTH_LONG);
-            //toast.show();
-            final Toast toast = Toast.makeText(this, "I am here",Toast.LENGTH_LONG);
-
-
-            String slack_token = "xoxp-445228206210-445228207138-444503456128-7d89ac8e1c0af84cc9160b913fb2c3d1";
-            SlackRealTimeMessagingClient client = SlackClientFactory.createSlackRealTimeMessagingClient(slack_token);
-
-        try{
-            client.connect();
-        } catch (Exception e){
-            Toast toast1 = Toast.makeText(this, e.toString(),Toast.LENGTH_LONG);
-            toast1.show();
-        }
-//            client.addListener(Event.MESSAGE, new EventListener() {
-//                @Override
-//                public void onMessage(com.fasterxml.jackson.databind.JsonNode jsonNode) {
-//                    toast.show();
-//                }
-//            });
-
-//            String arr[] = {"A","B"};
+//    public void openSlackGame()  {
+////        Intent intent = new Intent(this, Game.class);
+////        intent.putExtra(Game.FIRST_MOVE, 1);
 //
-//            new AlertDialog.Builder(this).setTitle(R.string.game_title).setItems(arr, new DialogInterface.OnClickListener() {
-//                @Override
-//                public void onClick(DialogInterface dialog,
-//                                    int which) { startGame(which); }}).show();
-
-    }
+////        Toast toast = Toast.makeText(this, "I am here after " + result,Toast.LENGTH_LONG);
+////        toast.show();
+//
+//    }
 
     protected void startGame(int which) {
         Log.d(this.getClass().getSimpleName(), "clicked on " + which);
@@ -118,3 +118,14 @@ public class MainActivity extends Activity implements OnClickListener {
         startActivity(intent);
     }
 }
+
+
+//    @Override
+//    public boolean onOptionsItemSelected(MenuItem item) {
+//        switch (item.getItemId()) { case R.id.action_settings: startActivity(new Intent(this, Prefs.class));
+//            return true;
+//// Add more as needed
+//        }
+//        return false;
+//    }
+

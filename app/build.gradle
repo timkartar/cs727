@@ -47,6 +47,8 @@ dependencies {
     implementation files('libs/jackson-annotations-2.8.0.jar')
     //implementation 'org.apache.httpcomponents:httpclient-android:4.3.5.1'
     implementation project(':slack_android')
-    implementation "cz.msebera.android:httpclient:4.4.1.2"
+    implementation 'cz.msebera.android:httpclient:4.4.1.2'
+    implementation files('libs/okhttp-3.5.0.jar')
+    implementation 'com.squareup.okio:okio:2.1.0'
 }
 
