@@ -4,7 +4,7 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "com.redgold.raktim.cs727"
-        minSdkVersion 15
+        minSdkVersion 26
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
@@ -16,8 +16,25 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    compileOptions {
+        targetCompatibility JavaVersion.VERSION_1_7
+        sourceCompatibility JavaVersion.VERSION_1_7
+    }
+    dexOptions {
+    }
+    packagingOptions {
+        exclude 'META-INF/INDEX.LIST'
+        exclude 'META-INF/io.netty.versions.properties'
+        exclude  'META-INF/DEPENDENCIES'
+    }
+    useLibrary 'org.apache.http.legacy'
 }
+allprojects {
+    repositories {
+        maven { url 'https://jitpack.io' }
+    }
 
+}
 dependencies {
     implementation fileTree(include: ['*.jar'], dir: 'libs')
     implementation 'com.android.support:appcompat-v7:28.0.0'
@@ -25,7 +42,11 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'com.android.support.test:runner:1.0.2'
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
-    implementation files('libs/jslack-1.1.6.jar')
-    implementation files('libs/javax.websocket-api-1.1.jar')
-    implementation files('libs/gson-2.8.5.jar')
+    implementation files('libs/jackson-databind-2.8.6.jar')
+    implementation files('libs/jackson-core-2.8.6.jar')
+    implementation files('libs/jackson-annotations-2.8.0.jar')
+    //implementation 'org.apache.httpcomponents:httpclient-android:4.3.5.1'
+    implementation project(':slack_android')
+    implementation "cz.msebera.android:httpclient:4.4.1.2"
 }
+

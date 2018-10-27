@@ -16,7 +16,6 @@
             </intent-filter>
         </activity>
         <activity android:name="com.redgold.raktim.cs727.Game"></activity>
-
     </application>
-
+    <uses-permission android:name="android.permission.INTERNET" />
 </manifest>
