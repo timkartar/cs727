@@ -7,10 +7,14 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.TextView;
+
+import allbegray.slack.SlackClientFactory;
+import allbegray.slack.rtm.SlackRealTimeMessagingClient;
 
 public class Game extends Activity {
 
@@ -34,6 +38,7 @@ public class Game extends Activity {
     private String computerSymbol;
 
     SecureRandom random = new SecureRandom();
+    SlackConnection connection = new SlackConnection();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -50,8 +55,34 @@ public class Game extends Activity {
         if (first != CONTINUE && computerSymbol.equals(SYMBOL_X)) {
             doComputerMove();
         }
-    }
 
+        connection.execute("1");
+        String result = null;
+        try {
+            result = connection.get();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+    private class SlackConnection extends AsyncTask<String, Void, String> {
+
+
+        @Override
+        protected String doInBackground(String... input) {
+            String slack_token = "xoxb-445228206210-445416796645-QOUSh3T34qBBlIUSRm2i8B9h";
+            SlackRealTimeMessagingClient client = SlackClientFactory.createSlackRealTimeMessagingClient(slack_token);
+
+            try{
+                client.connect();
+                return "connecting to slack";
+            } catch (Exception e){
+                System.out.print(e);
+                return "failing to connect to slack";
+            }
+        }
+
+
+    }
     public void doComputerMove() {
         // Dumb IA. Just find the next available unused cell...
         for (int i = 0; i < cells.length; i++) {

@@ -3,21 +3,14 @@ package com.redgold.raktim.cs727;
 import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.support.v7.app.AlertDialog;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AlertDialog;
 import android.util.Log;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Toast;
-import java.util.List;
-import java.util.concurrent.ExecutionException;
+
 import java.util.logging.Logger;
-
-import android.os.AsyncTask;
-
-import allbegray.slack.SlackClientFactory;
-import allbegray.slack.rtm.SlackRealTimeMessagingClient;
 
 public class MainActivity extends Activity implements OnClickListener {
     Logger log = Logger.getLogger("log");
@@ -33,25 +26,7 @@ public class MainActivity extends Activity implements OnClickListener {
 
     }
 
-    private class SlackConnection extends AsyncTask<String, Void, String> {
 
-
-        @Override
-        protected String doInBackground(String... input) {
-            String slack_token = "xoxb-445228206210-445416796645-QOUSh3T34qBBlIUSRm2i8B9h";
-            SlackRealTimeMessagingClient client = SlackClientFactory.createSlackRealTimeMessagingClient(slack_token);
-
-            try{
-                client.connect();
-                return "connecting to slack";
-            } catch (Exception e){
-                System.out.print(e);
-                return "failing to connect to slack";
-            }
-        }
-
-
-    }
 //    @Override
 //    public boolean onCreateOptionsMenu(Menu menu) {
 //// Inflate the menu; this adds items to the action bar if it is present.
@@ -68,7 +43,7 @@ public class MainActivity extends Activity implements OnClickListener {
                 break;
             case R.id.continue_button:
                 try {
-                    openSlackGame();
+                    //openSlackGame();
                 } catch (Exception e) {
                     Log.d(this.getClass().getSimpleName(), "error 1");
                 }
@@ -83,14 +58,7 @@ public class MainActivity extends Activity implements OnClickListener {
         try{
             //Toast toast = Toast.makeText(this, "I am here",Toast.LENGTH_LONG);
             //toast.show();
-            SlackConnection connection = new SlackConnection();
-            connection.execute("1");
-            String result = null;
-            try {
-                result = connection.get();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+
             new AlertDialog.Builder(this).setTitle(R.string.game_title).setItems(R.array.first_move, new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog,
