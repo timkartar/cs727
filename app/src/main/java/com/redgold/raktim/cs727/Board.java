@@ -18,7 +18,6 @@ public class Board extends View {
     private int selX;
     private int selY;
     private final Rect selRect = new Rect();
-
     public Board(Context context) {
         super(context);
         this.game = (Game) context;
@@ -98,12 +97,14 @@ public class Board extends View {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        if ( event.getAction() != MotionEvent.ACTION_DOWN)
-            return super.onTouchEvent(event);
+        if(game.me == true) {
+            if (event.getAction() != MotionEvent.ACTION_DOWN)
+                return super.onTouchEvent(event);
 
-        select((int) (event.getX() / width), (int) (event.getY() / height));
-        setSelectedCell(this.game.getPlayerSymbol());
-        Log.d(getClass().getSimpleName(), "onTouchEvent: x " + selX + ", y " + selY);
+            select((int) (event.getX() / width), (int) (event.getY() / height));
+            setSelectedCell(this.game.getPlayerSymbol());
+            Log.d(getClass().getSimpleName(), "onTouchEvent: x " + selX + ", y " + selY);
+        }
         return true;
     }
 
@@ -111,10 +112,14 @@ public class Board extends View {
         if (game.setCellIfValid(selX, selY, symbol)) {
             invalidate();
             if (!game.isGameOver())
-                game.doComputerMove();
+                //game.doComputerMove();
+                System.out.println("game not over");
+            game.me = false;
+
         } else {
             Log.d(getClass().getSimpleName(), "setSelectedCell: invalid selection");
             startAnimation(AnimationUtils.loadAnimation(game, R.anim.shake));
+            game.me = true;
         }
     }
 

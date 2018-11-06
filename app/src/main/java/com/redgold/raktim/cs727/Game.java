@@ -1,22 +1,32 @@
 package com.redgold.raktim.cs727;
 
 import java.security.SecureRandom;
-
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Log;
 import android.widget.TextView;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import allbegray.slack.SlackClientFactory;
+import allbegray.slack.exception.SlackResponseErrorException;
+import allbegray.slack.rtm.Event;
+import allbegray.slack.rtm.EventListener;
 import allbegray.slack.rtm.SlackRealTimeMessagingClient;
+import allbegray.slack.type.Authentication;
+import allbegray.slack.type.Channel;
+import allbegray.slack.type.User;
+import allbegray.slack.webapi.SlackWebApiClient;
+import java.util.Arrays;
+import java.util.Observable;
+import java.util.Observer;
+import java.util.UUID;
 
-public class Game extends Activity {
+
+public class Game extends Activity  {
 
     public static final String FIRST_MOVE = "com.bamafolks.android.games.tictactoe.first_move";
     public static final int PLAYER_FIRST = 0;
@@ -36,9 +46,33 @@ public class Game extends Activity {
 
     private String playerSymbol;
     private String computerSymbol;
+    public boolean me = false;
 
     SecureRandom random = new SecureRandom();
-    SlackConnection connection = new SlackConnection();
+    MyModel model = new MyModel();
+
+    private class MyObserver implements Observer {
+        @Override
+        public void update(Observable o, Object Arg) {
+
+            int opponent_move = Integer.valueOf(((MyModel)o).output);
+            cells[opponent_move] = computerSymbol;
+//            for (int i = 0; i < cells.length; i++) {
+//                if (cells[i].equals(SYMBOL_SPACE)) {
+//                    cells[i] = computerSymbol;
+//                    break;
+//                }
+//            }
+
+            board.invalidate();
+            isGameOver();
+            System.out.print("change noticed" + ((MyModel)o).output);
+            me = true;
+        }
+
+    }
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,60 +85,120 @@ public class Game extends Activity {
         board = new Board(this);
         setContentView(board);
         board.requestFocus();
-
+        me = true;
         if (first != CONTINUE && computerSymbol.equals(SYMBOL_X)) {
-            doComputerMove();
+            //doComputerMove();
+            me = false;
         }
+        SlackConnection connection = new SlackConnection(this);
+        connection.execute("listener starts");
+        model.addObserver(new MyObserver());
 
-        connection.execute("1");
-        String result = null;
-        try {
-            result = connection.get();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
-    private class SlackConnection extends AsyncTask<String, Void, String> {
+    private class SlackConnection extends AsyncTask<String, String, String> {
 
+        String output = null;
+        Game game;
+        public SlackConnection(Game game) {
+            this.game  = game;
+        }
 
         @Override
         protected String doInBackground(String... input) {
             String slack_token = "xoxb-445228206210-445416796645-QOUSh3T34qBBlIUSRm2i8B9h";
+            final SlackWebApiClient mWebApiClient = SlackClientFactory.createWebApiClient(slack_token);
+            String webSocketUrl = mWebApiClient.startRealTimeMessagingApi().findPath("url").asText();
+            //SlackRealTimeMessagingClient mRtmClient = new SlackRealTimeMessagingClient(webSocketUrl);
             SlackRealTimeMessagingClient client = SlackClientFactory.createSlackRealTimeMessagingClient(slack_token);
+            final String uuid = UUID.randomUUID().toString();
+            client.addListener(Event.HELLO, new EventListener() {
+                @Override
+                public void onMessage(JsonNode message) {
+
+                    Authentication authentication = mWebApiClient.auth();
+                    String mBotId = authentication.getUser_id();
+                    //System.out.println("User id: " + mBotId);
+                    //System.out.println("Team name: " + authentication.getTeam());
+                    //System.out.println("User name: " + authentication.getUser());
+                }
+            });
+
+            client.addListener(Event.MESSAGE, new EventListener() {
+
+                @Override
+                public void onMessage(JsonNode message) {
+                    String channelId = message.findPath("channel").asText();
+                    String userId = message.findPath("user").asText();
+                    String text = message.findPath("text").asText();
+                    String[] tokens = text.split("\\s+");
+                    //System.out.println(tokens[tokens.length - 1]);
+
+
+                    Authentication authentication = mWebApiClient.auth();
+                    String mBotId = authentication.getUser_id();
+                    if (userId != null  && userId.equals(mBotId) && !tokens[tokens.length - 1].equals(uuid)) { //
+                        Channel channel;
+                        try {
+                            channel = mWebApiClient.getChannelInfo(channelId);
+                        } catch (SlackResponseErrorException e) {
+                            channel = null;
+                        }
+                        User user = mWebApiClient.getUserInfo(userId);
+                        String userName = user.getName();
+
+                        //System.out.println("Channel id: " + channelId);
+                        //System.out.println("Channel name: " + (channel != null ? "#" + channel.getName() : "DM"));
+                        //System.out.println("User id: " + userId);
+                        //System.out.println("User name: " + userName);
+                        //System.out.println("Text: " + text);
+
+                        // Copy cat
+                        //mWebApiClient.meMessage(channelId, text + " " + uuid);
+                        String[] split_text  = text.split("\\s+");
+                        onProgressUpdate(split_text);
+                    }
+                }
+            });
 
             try{
+                //mWebApiClient.meMessage("#general",  input + " " + uuid);
                 client.connect();
-                return "connecting to slack";
+
+                while(output==null){
+                    continue;
+                }
+
+                //client.close();
+                //postMessage();
+                //System.out.println(output);
+                return output;
             } catch (Exception e){
                 System.out.print(e);
                 return "failing to connect to slack";
             }
+
         }
 
-
-    }
-    public void doComputerMove() {
-        // Dumb IA. Just find the next available unused cell...
-        for (int i = 0; i < cells.length; i++) {
-            if (cells[i].equals(SYMBOL_SPACE)) {
-                cells[i] = computerSymbol;
-                break;
-            }
+        @Override
+        protected void onProgressUpdate(String... split_text){
+            game.model.output = String.join(" ",Arrays.copyOfRange(split_text,0,split_text.length - 1));
+            game.model.change(String.join(" ",Arrays.copyOfRange(split_text,0,split_text.length - 1)));
+            //System.out.println(game.model.output);
+            //System.out.println(String.join(" ",Arrays.copyOfRange(split_text,0,split_text.length - 1)));
         }
 
-        board.invalidate();
-        isGameOver();
     }
+
 
     public boolean isGameOver() {
         int[] winner = findWinner();
 
         if (winner != null) {
             if (cells[winner[0]].equals(playerSymbol)) {
-                showEndOfGame("Congratulations!  You won this game!");
+                showEndOfGame(" Congratulations!  You won this game! ");
                 return true;
             } else {
-                showEndOfGame("Opps, the computer won this game.");
+                showEndOfGame(" Oops, the computer won this game. ");
                 return true;
             }
         } else {
@@ -117,7 +211,7 @@ public class Game extends Activity {
                 }
 
             if (tie) {
-                showEndOfGame("Nobody won!  Better luck next time.");
+                showEndOfGame(" Nobody won!  Better luck next time. ");
                 return true;
             }
         }
