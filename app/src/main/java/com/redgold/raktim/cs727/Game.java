@@ -47,16 +47,17 @@ public class Game extends Activity  {
     private String playerSymbol;
     private String computerSymbol;
     public boolean me = false;
+    final String uuid = UUID.randomUUID().toString();
 
     SecureRandom random = new SecureRandom();
     MyModel model = new MyModel();
-
+    SlackConnection connection;
     private class MyObserver implements Observer {
         @Override
         public void update(Observable o, Object Arg) {
-
-            int opponent_move = Integer.valueOf(((MyModel)o).output);
-            cells[opponent_move] = computerSymbol;
+            try {
+                int opponent_move = Integer.valueOf(((MyModel) o).output);
+                cells[opponent_move] = computerSymbol;
 //            for (int i = 0; i < cells.length; i++) {
 //                if (cells[i].equals(SYMBOL_SPACE)) {
 //                    cells[i] = computerSymbol;
@@ -64,10 +65,14 @@ public class Game extends Activity  {
 //                }
 //            }
 
-            board.invalidate();
-            isGameOver();
-            System.out.print("change noticed" + ((MyModel)o).output);
-            me = true;
+                board.invalidate();
+                isGameOver();
+                System.out.print("change noticed" + ((MyModel) o).output);
+                me = true;
+            }
+            catch(Exception e){
+                System.out.println(e);
+            }
         }
 
     }
@@ -90,8 +95,9 @@ public class Game extends Activity  {
             //doComputerMove();
             me = false;
         }
-        SlackConnection connection = new SlackConnection(this);
-        connection.execute("listener starts");
+        connection = new SlackConnection(this);
+        //connection.execute("start game ");
+        connection.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,"Started listener");
         model.addObserver(new MyObserver());
 
     }
@@ -110,7 +116,6 @@ public class Game extends Activity  {
             String webSocketUrl = mWebApiClient.startRealTimeMessagingApi().findPath("url").asText();
             //SlackRealTimeMessagingClient mRtmClient = new SlackRealTimeMessagingClient(webSocketUrl);
             SlackRealTimeMessagingClient client = SlackClientFactory.createSlackRealTimeMessagingClient(slack_token);
-            final String uuid = UUID.randomUUID().toString();
             client.addListener(Event.HELLO, new EventListener() {
                 @Override
                 public void onMessage(JsonNode message) {
@@ -160,17 +165,24 @@ public class Game extends Activity  {
                 }
             });
 
+
+
             try{
                 //mWebApiClient.meMessage("#general",  input + " " + uuid);
                 client.connect();
 
-                while(output==null){
-                    continue;
+                while(true){
+                    if (isCancelled()){
+                        client.close();
+                        break;
+
+                    }
                 }
 
                 //client.close();
                 //postMessage();
                 //System.out.println(output);
+
                 return output;
             } catch (Exception e){
                 System.out.print(e);
@@ -182,7 +194,12 @@ public class Game extends Activity  {
         @Override
         protected void onProgressUpdate(String... split_text){
             game.model.output = String.join(" ",Arrays.copyOfRange(split_text,0,split_text.length - 1));
-            game.model.change(String.join(" ",Arrays.copyOfRange(split_text,0,split_text.length - 1)));
+            game.runOnUiThread(new Runnable(){
+                public void run() {
+                    model.change("changed");
+                }
+            });
+
             //System.out.println(game.model.output);
             //System.out.println(String.join(" ",Arrays.copyOfRange(split_text,0,split_text.length - 1)));
         }
@@ -211,6 +228,7 @@ public class Game extends Activity  {
                 }
 
             if (tie) {
+                connection.cancel(true);
                 showEndOfGame(" Nobody won!  Better luck next time. ");
                 return true;
             }
@@ -261,7 +279,9 @@ public class Game extends Activity  {
                             @Override
                             public void onClick(DialogInterface dialog,
                                                 int which) {
+                                connection.cancel(true);
                                 finish();
+
                             }
                         }).create().show();
     }
@@ -306,6 +326,7 @@ public class Game extends Activity  {
         if (!cells[index].equals(SYMBOL_SPACE))
             return false;
         cells[index] = symbol;
+        //connection.cancel(true);
         return true;
     }
 

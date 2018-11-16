@@ -13,7 +13,7 @@
     <string name="about_title">About Tic-Tac-Toe</string>
     <string name="about_text">\
         Tic-tac-toe is game of 9 squares where players alternately place an \'X\' or an \'O\' on a <i>3x3 </i>grid.  To win, you must get three X\'s or O\'s in a row.</string>
-    <string name="player_label">Player</string>
+    <string name="player_label">Game available. Join? </string>
     <string name="computer_label">Computer</string>
     <string name="random_label">Random</string>
     <string name="game_title">Game</string>

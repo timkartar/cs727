@@ -6,10 +6,16 @@ import android.graphics.Paint;
 import android.graphics.Paint.FontMetrics;
 import android.graphics.Paint.Style;
 import android.graphics.Rect;
+import android.os.AsyncTask;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.animation.AnimationUtils;
+import java.util.List;
+
+import allbegray.slack.SlackClientFactory;
+import allbegray.slack.type.Channel;
+import allbegray.slack.webapi.SlackWebApiClient;
 
 public class Board extends View {
     private final Game game;
@@ -114,6 +120,14 @@ public class Board extends View {
             if (!game.isGameOver())
                 //game.doComputerMove();
                 System.out.println("game not over");
+            try {
+                SlackConnection connection = new SlackConnection(game);
+                String inp = String.valueOf((int) (selY * 3 + selX));
+                connection.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR,inp);
+            }
+            catch(Exception e){
+                System.out.println(e);
+            }
             game.me = false;
 
         } else {
@@ -121,6 +135,34 @@ public class Board extends View {
             startAnimation(AnimationUtils.loadAnimation(game, R.anim.shake));
             game.me = true;
         }
+    }
+
+    private class SlackConnection extends AsyncTask<String, String, String> {
+
+        String output = null;
+        Game game;
+        public SlackConnection(Game game) {
+            this.game  = game;
+        }
+
+        @Override
+        protected String doInBackground(final String... input) {
+            String slack_token = "xoxb-445228206210-445416796645-QOUSh3T34qBBlIUSRm2i8B9h";
+            final SlackWebApiClient mWebApiClient = SlackClientFactory.createWebApiClient(slack_token);
+            List<Channel> channels = mWebApiClient.getChannelList();
+            String channelId = "";
+            for(Channel c: channels){
+                if(c.getName().equals("general")){
+                    channelId = c.getId();
+                    System.out.println(c.getName());
+                    break;
+                }
+            }
+            mWebApiClient.meMessage(channelId,  input[0] + " " + game.uuid);
+
+            return output;
+        }
+
     }
 
 }
