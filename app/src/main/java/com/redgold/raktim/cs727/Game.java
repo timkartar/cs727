@@ -52,6 +52,7 @@ public class Game extends Activity  {
     SecureRandom random = new SecureRandom();
     MyModel model = new MyModel();
     SlackConnection connection;
+    public String opponent = null;
     private class MyObserver implements Observer {
         @Override
         public void update(Observable o, Object Arg) {
@@ -90,10 +91,10 @@ public class Game extends Activity  {
         board = new Board(this);
         setContentView(board);
         board.requestFocus();
-        me = true;
+        me = false;
         if (first != CONTINUE && computerSymbol.equals(SYMBOL_X)) {
             //doComputerMove();
-            me = false;
+            me = true;
         }
         connection = new SlackConnection(this);
         //connection.execute("start game ");
@@ -143,24 +144,30 @@ public class Game extends Activity  {
                     String mBotId = authentication.getUser_id();
                     if (userId != null  && userId.equals(mBotId) && !tokens[tokens.length - 1].equals(uuid)) { //
                         Channel channel;
-                        try {
-                            channel = mWebApiClient.getChannelInfo(channelId);
-                        } catch (SlackResponseErrorException e) {
-                            channel = null;
+                        if(opponent == null){
+                            opponent = tokens[tokens.length - 1];
                         }
-                        User user = mWebApiClient.getUserInfo(userId);
-                        String userName = user.getName();
+                        if(opponent.equals(tokens[tokens.length - 1])) {
 
-                        //System.out.println("Channel id: " + channelId);
-                        //System.out.println("Channel name: " + (channel != null ? "#" + channel.getName() : "DM"));
-                        //System.out.println("User id: " + userId);
-                        //System.out.println("User name: " + userName);
-                        //System.out.println("Text: " + text);
+                            try {
+                                channel = mWebApiClient.getChannelInfo(channelId);
+                            } catch (SlackResponseErrorException e) {
+                                channel = null;
+                            }
+                            User user = mWebApiClient.getUserInfo(userId);
+                            String userName = user.getName();
 
-                        // Copy cat
-                        //mWebApiClient.meMessage(channelId, text + " " + uuid);
-                        String[] split_text  = text.split("\\s+");
-                        onProgressUpdate(split_text);
+                            //System.out.println("Channel id: " + channelId);
+                            //System.out.println("Channel name: " + (channel != null ? "#" + channel.getName() : "DM"));
+                            //System.out.println("User id: " + userId);
+                            //System.out.println("User name: " + userName);
+                            //System.out.println("Text: " + text);
+
+                            // Copy cat
+                            //mWebApiClient.meMessage(channelId, text + " " + uuid);
+                            String[] split_text = text.split("\\s+");
+                            onProgressUpdate(split_text);
+                        }
                     }
                 }
             });
@@ -215,7 +222,7 @@ public class Game extends Activity  {
                 showEndOfGame(" Congratulations!  You won this game! ");
                 return true;
             } else {
-                showEndOfGame(" Oops, the computer won this game. ");
+                showEndOfGame(" Oops, your opponent won this game. ");
                 return true;
             }
         } else {

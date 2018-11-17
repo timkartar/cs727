@@ -130,7 +130,9 @@ public class MainActivity extends Activity implements OnClickListener {
                         User user = mWebApiClient.getUserInfo(userId);
                         String userName = user.getName();
                         String[] split_text  = text.split("\\s+");
-                        onProgressUpdate(split_text);
+                        if(split_text[split_text.length - 1].equals("start")) {
+                            onProgressUpdate(split_text);
+                        }
                     }
                 }
             });
